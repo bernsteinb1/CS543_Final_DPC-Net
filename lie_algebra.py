@@ -19,9 +19,25 @@ def skew_matrix(rotations: torch.Tensor):
     matrices[:, 2, 1] = rotations[:, 0]
     return matrices
 
+def lie_vee(vectors: torch.Tensor):
+    if vectors.dim() == 1:
+        vectors = vectors.unsqueeze(0)
+    num_vecs = vectors.size(0)
+    rots = vectors[:, 0:3, 0:3]
+    traces = rots.diagonal(offset=0, dim1=1, dim2=2).sum(dim=1)
+    vecs = (rots - rots.transpose(1, 2)).flatten(1)[:, [7, 2, 3]]
+    
+    cos_theta = (1 / 2 * (traces - 1)).view(num_vecs, 1)
+    sin_theta = (1 / 2 * torch.sqrt((3 - traces) * (1 + traces))).view(num_vecs, 1)
+    theta = torch.atan2(sin_theta, cos_theta)
+    
+    w = theta / (2 * sin_theta) * (vecs)
+    return w
+    
+
 def lie_hat(vectors: torch.Tensor):
     if vectors.dim() == 1:
-        vectors = vectors.unsqueeze(0)   
+        vectors = vectors.unsqueeze(0)
     num_vecs = vectors.size(0)
     
     trans = vectors[:, :3]
@@ -52,7 +68,8 @@ def lie_hat(vectors: torch.Tensor):
 if __name__ == '__main__':
     # This file is not intended to be run directly. These are tests to make sure implemented functions are behaving as intended
     val = 2 * math.pi / (3 * math.sqrt(3))
-    vec = torch.Tensor([-1, 0.5, 2, 1, 1, 1])
+    vec = torch.Tensor([-1, 0.5, 2, 1, 2, 1])
     T = lie_hat(vec)
-    print(T)
+    print(lie_vee(T))
+    # print(T)
     
